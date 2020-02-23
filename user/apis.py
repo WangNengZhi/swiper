@@ -1,9 +1,17 @@
-from django.shortcuts import render
+from django.http import JsonResponse
+
+from user import logics
+from common import stat
 
 
 def get_vcode(request):
     """获取短信验证码"""
-    pass
+    phonenum = request.GET.get('phonenum')
+    status = logics.send_vcode(phonenum)
+    if status:
+        return JsonResponse({'code': stat.OK, 'data': None})
+    else:
+        return JsonResponse({'code': stat.VCODE_ERR, 'data': None})
 
 
 def submit_vcode(request):
