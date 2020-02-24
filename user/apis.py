@@ -4,6 +4,7 @@ from django.core.cache import cache
 from user import logics
 from common import stat
 from user.models import User
+from user.models import Profile
 
 
 def get_vcode(request):
@@ -35,6 +36,13 @@ def submit_vcode(request):
         return JsonResponse({'code': stat.OK, 'data': user.to_dict()})
     else:
         return JsonResponse({'code': stat.VCODE_ERR, 'data': None})
+
+
+def get_profile(request):
+    """获取个人资料"""
+    profile, _ = Profile.objects.get_or_create(id=request.uid)
+
+    return JsonResponse({'code': stat.OK, 'data': profile.to_dict()})
 
 
 def set_profile(request):
