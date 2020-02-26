@@ -4,6 +4,8 @@ from user import logics
 from common import stat
 from user.models import User
 from user.models import Profile
+from user.forms import UserForm
+from user.forms import ProfileForm
 from libs.http import render_json
 
 
@@ -47,7 +49,25 @@ def get_profile(request):
 
 def set_profile(request):
     """修改个人资料"""
-    pass
+    user_from = UserForm(request.POST)
+    profile_from = ProfileForm(request.POST)
+
+    # 检查数据有效性
+    if not user_from.is_valid():
+        return render_json(user_from.errors, stat.USER_FORM_ERR)
+    if not profile_from.is_valid():
+        return render_json(profile_from.errors, stat.PROFILE_FORM_ERR)
+
+    data = {}
+    data.update(user_from.cleaned_data)
+    data.update(profile_from.cleaned_data)
+    data['birthday'] = str(data['birthday'])
+
+    # 保存数据
+    User.objects.filter(id=request.uid).update(**user_from.cleaned_data)
+    Profile.objects.filter(id=request.uid).update(**profile_from.cleaned_data)
+
+    return render_json()
 
 
 def upload_avatar(request):
