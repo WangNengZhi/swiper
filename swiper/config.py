@@ -12,3 +12,9 @@ YZX_SMS_ARGS = {
     "param": None,
     "mobile": None,
 }
+
+
+QN_AK = '5UedIsOuzwK10ADuiTKJHfjFXkQukbF8ps9WDEn8'
+QN_SK = '_nZH8NNdxGEIt7lvVYLsoAhFODNsgYpTUySn8nx2'
+QN_BUCKET_NAME = 'snz'
+QN_BASE_URL = 'http://q6cmz3k8e.bkt.clouddn.com'
