@@ -16,11 +16,20 @@ class Swiped(models.Model):
     class Meta:
         db_table = 'swiped'
 
+    @classmethod
+    def is_liked(cls, uid, sid):
+        """检查是否喜欢过对方"""
+        return cls.objects.filter(uid=uid, sid=sid, stype__in=['like', 'superlike']).exists()
+
 
 class Friend(models.Model):
     """好友关系"""
     uid1 = models.IntegerField(verbose_name='好友ID')
     uid2 = models.IntegerField(verbose_name='好友ID')
+
+    class Meta:
+        db_table = 'friend'
+        unique_together = [['uid1', 'uid2']]
 
     @classmethod
     def make_friend(cls, uid1, uid2):
