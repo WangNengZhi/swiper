@@ -2,6 +2,7 @@ from django.core.cache import cache
 
 from user import logics
 from common import stat
+from common import keys
 from user.models import User
 from user.models import Profile
 from user.forms import UserForm
@@ -24,7 +25,7 @@ def submit_vcode(request):
     vcode = request.POST.get('vcode')
     phonenum = request.POST.get('phonenum')
 
-    cache_vcode = cache.get('Vcode-%s' % phonenum)  # 取出缓存的验证码
+    cache_vcode = cache.get(keys.VCODE_K % phonenum)  # 取出缓存的验证码
 
     # 检查验证码是否正确
     if vcode and vcode == cache_vcode:

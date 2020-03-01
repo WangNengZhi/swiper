@@ -18,6 +18,8 @@ def like(request):
 
 def super_like(request):
     """上滑超级喜欢"""
+    sid = int(request.POST.get('sid'))
+    is_matched = logics.super_like_someone(request.uid, sid)
     return render_json()
 
 
