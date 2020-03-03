@@ -5,6 +5,7 @@ import requests
 from django.core.cache import cache
 
 from swiper import config
+from common import keys
 from user.models import User
 from libs.qn_clound import upload_to_qiniu
 from tasks import celery_app
@@ -18,7 +19,7 @@ def gen_rand_code(length=6):
 def send_vcode(mobile):
     """发送短信验证码"""
     vcode = gen_rand_code()  # 产生验证码
-    cache.set('Vcode-%s' % mobile, vcode, 180)  # 将验证码写入缓存,保存3分钟
+    cache.set(keys.VCODE_K % mobile, vcode, 180)  # 将验证码写入缓存,保存3分钟
     print('验证码:', vcode)
 
     args = config.YZX_SMS_ARGS.copy()  # 复制前拷贝全局配置
