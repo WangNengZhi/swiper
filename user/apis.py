@@ -17,7 +17,7 @@ def get_vcode(request):
     if status:
         return render_json()
     else:
-        return render_json(code=stat.SEND_ERR)
+        raise stat.SendSmsErr
 
 
 def submit_vcode(request):
@@ -38,7 +38,7 @@ def submit_vcode(request):
         request.session['uid'] = user.id
         return render_json(user.to_dict())
     else:
-        return render_json(code=stat.VCODE_ERR)
+        raise stat.VcodeErr
 
 
 def get_profile(request):
@@ -55,9 +55,10 @@ def set_profile(request):
 
     # 检查数据有效性
     if not user_from.is_valid():
-        return render_json(user_from.errors, stat.USER_FORM_ERR)
+        raise stat.UserFormErr(user_from.errors)
+
     if not profile_from.is_valid():
-        return render_json(profile_from.errors, stat.PROFILE_FORM_ERR)
+        raise stat.ProfileFormErr(profile_from.errors)
 
     data = {}
     data.update(user_from.cleaned_data)

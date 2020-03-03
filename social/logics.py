@@ -1,6 +1,8 @@
 import datetime
 
+from swiper import config
 from common import keys
+from common import stat
 from libs.cache import rds
 from user.models import User
 from user.models import Profile
@@ -50,7 +52,7 @@ def rcmd(uid):
 def like_someone(uid, sid):
     """喜欢某人"""
     # 添加一条滑动记录
-    Swiped.objects.create(uid=uid, sid=sid, stype='like')
+    Swiped.swiped(uid, sid, 'like')
 
     # 将sid从优先队列中删除
     rds.lrem(keys.FIRST_RCMD_K % uid, 0, sid)
@@ -67,7 +69,7 @@ def like_someone(uid, sid):
 def super_like_someone(uid, sid):
     """超级喜欢"""
     # 添加滑动记录
-    Swiped.objects.create(uid=uid, sid=sid, stype='superlike')
+    Swiped.swiped(uid, sid, 'superlike')
 
     # 将sid从优先队列中删除
     rds.lrem(keys.FIRST_RCMD_K % uid, 0, sid)
@@ -82,3 +84,62 @@ def super_like_someone(uid, sid):
         # 对方没有滑动过自己，将自己的uid添加到对方的 “优先推荐队列”
         rds.rpush(keys.FIRST_RCMD_K % sid, uid)
         return False
+
+
+def dislike_someone(uid, sid):
+    Swiped.swiped(uid, sid, 'dislike')
+    # 将sid从优先队列中删除
+    rds.lrem(keys.FIRST_RCMD_K % uid, 0, sid)
+
+
+def rewind_swiper(uid):
+    """
+    反悔一次滑动
+    每天允许反悔3次，反悔记录只能是5分子之内的
+    """
+    now = datetime.datetime.now()  # 取出当前时间
+    # 取出当天的反悔次数
+    rewind_k = keys.REWIND_k % (now.date(), uid)
+    rewind_times = rds.get(rewind_k, 0)  # 取出当天反悔次数 取不到的时候默认为0
+    # 检查当前反悔次数
+    if rewind_times >= config.REWIND_TIMES:
+        raise stat.RewindLimit
+
+    # 取出最后一次滑动记录
+    latest_swipe = Swiped.objects.filter(uid=uid).latest('time')
+    # 检查滑动记录时间是否超过5分钟
+    pass_time = now - latest_swipe.time
+    if pass_time.total_seconds() >= config.REWIND_TIMEOUT:
+        raise stat.RewindTimeout
+
+    # 如果是超级喜欢，需要将自己从对方的优先队列中删除
+    # 如果之前是喜欢或者超级喜欢,需要撤销好友关系
+    if latest_swipe.stype == 'superlike':
+        rds.lrem(keys.FIRST_RCMD_K % latest_swipe.sid, 1, uid)
+        Friend.break_off(uid, latest_swipe.sid)
+    elif latest_swipe.stype == 'like':
+        Friend.break_off(uid, latest_swipe.sid)
+
+    # 删除滑动记录
+    latest_swipe.delete()
+    # 更新反悔次数
+    rds.set(rewind_k, rewind_times + 1, 86400)
+
+
+def users_liked_me(uid):
+    """
+    喜欢过或者超级喜欢过我的用户
+
+    查询条件：
+        - 对方不是我的好友
+        - 我还没有滑过我
+        - 对方右滑或者上滑过我
+    """
+    # 获取自己的好友ID列表
+    sid_list = Swiped.objects.filter(uid=uid).values_list('sid', flat=True)
+    like_types = ['like', 'superlike']
+    uid_list = Swiped.objects.filter(sid=uid, stype__in=like_types)\
+                     .exclude(uid__in=sid_list)\
+                     .values_list('uid', flat=True)
+    users = User.objects.filter(id__in=uid_list)
+    return users
